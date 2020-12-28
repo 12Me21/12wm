@@ -5,7 +5,7 @@ CFLAGS?=-Os -pedantic -Wall
 	$(CC) $(CFLAGS) -L$(PREFIX)/lib -lX11 $^ -o $@
 
 main.o: main.c
-	$(CC) $(CFLAGS) -I$(PREFIX)/include -L$(PREFIX)/lib -lX11 -c $^ -o $@
+	$(CC) $(CFLAGS) -I$(PREFIX)/include -c $^ -o $@
 
 clean:
 	$(RM) 12wm
