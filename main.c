@@ -1,5 +1,11 @@
+#define _GNU_SOURCE 1
 #include <X11/Xlib.h>
+#include <lua5.3/lua.h>
+#include <sys/inotify.h>
 #include <stdio.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define loop for (;;)
 #define var __auto_type
@@ -45,7 +51,30 @@ static void focusNextWindow(Display* d) {
 	XFree(children);
 }
 
+handleKey() {
+	
+}
+
+void handler(int signum) {
+	puts("SIGMA");
+}
+
 int main(void) {
+	int z;
+	struct sigaction action;
+	action.sa_handler = handler;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 0;
+	z|=sigaction(SIGIO, &action, NULL);
+	
+	int ifd = inotify_init();
+	z|=inotify_add_watch(ifd, "script.lua", IN_CLOSE_WRITE);
+	
+	z|=fcntl(ifd, F_SETFL, O_ASYNC);
+	z|=fcntl(ifd, F_SETOWN, getpid());
+	z|=fcntl(ifd, F_SETSIG, 0);
+	printf("%d\n",z);
+
 	var dpy = XOpenDisplay(0);
 	if (!dpy) return 1;
 	var root = DefaultRootWindow(dpy);
@@ -71,6 +100,7 @@ int main(void) {
 				focusWindow(dpy, ev.xbutton.subwindow);
 		} else if (XCheckTypedEvent(dpy, KeyPress, &ev)) {
 			start = ev.xkey;
+			puts("key");
 			if (ev.xkey.keycode == key(dpy, "Super_L")) {
 				if (start.subwindow) {
 					focusWindow(dpy, start.subwindow);
