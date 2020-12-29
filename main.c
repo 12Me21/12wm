@@ -1,9 +1,10 @@
 #include <X11/Xlib.h>
+#include <stdio.h>
 
 #define loop for (;;)
 #define var __auto_type
 
-static void getQuadrant(XWindowAttributes attr, XEvent evt) {
+/*static void getQuadrant(XWindowAttributes attr, XEvent evt) {
 	int x = evt.x - attr.x;
 	int y = evt.y - attr.y;
 	if (x < attr.width/3) x = -1;
@@ -13,6 +14,18 @@ static void getQuadrant(XWindowAttributes attr, XEvent evt) {
 	else if (y > attr.width*2/3) y = 1;
 	else y = 0;
 	
+	}*/
+
+static void focusWindow(Display* d, Window w) {
+	XSetInputFocus(d, w, RevertToPointerRoot, CurrentTime);
+	XRaiseWindow(d, w);
+}
+
+static Window getFocused(Display* d) {
+	Window w;
+	int x;
+	XGetInputFocus(d, &w, &x);
+	return w;
 }
 
 static void focusNextWindow(Display* d) {
@@ -24,7 +37,7 @@ static void focusNextWindow(Display* d) {
 		if (children[i] == focused)
 			break;
 	i = (i+1) % nchildren;
-	XSetInputFocus(d, children[i], RevertToParent, CurrentTime);
+	focusWindow(d, children[i]);
 	XFree(children);
 }
 
@@ -34,6 +47,12 @@ int main(void) {
 	var root = DefaultRootWindow(dpy);
 	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("Super_L")), AnyModifier, root, True, GrabModeAsync, GrabModeAsync);
 	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("Tab")), Mod3Mask, root, True, GrabModeAsync, GrabModeAsync);
+	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("X")), Mod3Mask, root, True, GrabModeAsync, GrabModeAsync);
+	XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
+	XSetInputFocus(dpy, None, RevertToNone, CurrentTime);
+	XGrabButton(dpy, Button1, AnyModifier, root, False, ButtonPressMask, GrabModeSync, GrabModeAsync, None, None);
+	//XSelectInput(dpy, root, ButtonPressMask);
+	
 	XKeyEvent start;
 	start.subwindow = None;
 	Bool resize = False;
@@ -41,42 +60,47 @@ int main(void) {
 	loop {
 		XWindowAttributes attr;
 		XEvent ev;
-		XNextEvent(dpy, &ev);
-		if (ev.type==KeyPress && ev.xkey.subwindow) {
+		XAllowEvents(dpy, ReplayPointer, CurrentTime);
+		if (XCheckTypedEvent(dpy, ButtonPress, &ev)) {
+			if (getFocused(dpy) != ev.xbutton.subwindow) {
+				focusWindow(dpy, ev.xbutton.subwindow);
+			}
+		} else if (XCheckTypedEvent(dpy, KeyPress, &ev)) {
 			start = ev.xkey;
-			XRaiseWindow(dpy, start.subwindow);
-			XGetWindowAttributes(dpy, start.subwindow, &attr);
-			resize = !(ev.xbutton.x_root - attr.x < attr.width - 50 && ev.xbutton.y_root - attr.y < attr.height - 50);
-			XGrabPointer(dpy, root, True, PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
-		} else if (ev.type==KeyRelease) {
-			if (resize) {
-				int xdiff = ev.xbutton.x_root - start.x_root;
-				int ydiff = ev.xbutton.y_root - start.y_root;
-				XMoveResizeWindow(
+			if (start.subwindow) {
+				focusWindow(dpy, start.subwindow);
+				XGetWindowAttributes(dpy, start.subwindow, &attr);
+				resize = !(ev.xbutton.x_root - attr.x < attr.width - 50 && ev.xbutton.y_root - attr.y < attr.height - 50);
+				XGrabPointer(dpy, root, True, PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
+			}
+		} else if (XCheckTypedEvent(dpy, KeyRelease, &ev)) {
+			if (start.subwindow) {
+				if (resize) {
+					int xdiff = ev.xbutton.x_root - start.x_root;
+					int ydiff = ev.xbutton.y_root - start.y_root;
+					XMoveResizeWindow(
 					dpy, start.subwindow,
 					attr.x,
 					attr.y,
 					attr.width + xdiff,
 					attr.height + ydiff);
+				}
+				start.subwindow = None;
 			}
-			start.subwindow = None;
-
 			XUngrabPointer(dpy, CurrentTime);
-		} else if (ev.type == MotionNotify && start.subwindow) {
-			int xdiff = ev.xbutton.x_root - start.x_root;
-			int ydiff = ev.xbutton.y_root - start.y_root;
-			if (!resize) {
-				XMoveResizeWindow(
-					dpy, start.subwindow,
-					attr.x + xdiff,
-					attr.y + ydiff,
-					attr.width,
-					attr.height);
+		} else if (XCheckTypedEvent(dpy, MotionNotify, &ev)) {
+			if (start.subwindow) {
+				int xdiff = ev.xbutton.x_root - start.x_root;
+				int ydiff = ev.xbutton.y_root - start.y_root;
+				if (!resize) {
+					XMoveResizeWindow(
+					                  dpy, start.subwindow,
+					                  attr.x + xdiff,
+					                  attr.y + ydiff,
+					                  attr.width,
+					                  attr.height);
+				}
 			}
 		}
-		// idea: resize happens on keyup
-		// if another key is held during the keyup,
-		// it does resize (and reverts position)
-		// use position as resize preview!!
 	}
 }
