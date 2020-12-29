@@ -1,0 +1,50 @@
+;; This buffer is for text that is not saved, and for Lisp evaluation.
+;; To create a file, visit it with C-x C-f and enter text in its buffer.
+
+Error: target STRING not available
+Error: target STRING not available
+Error: target STRING not available
+Error: target STRING not available
+Error: target STRING not available
+Error: target STRING not available
+
+
+./defaults/defaults8:click_to_focus=true
+
+./src/client.c2187:            if ((c) && ((screen_info->params->raise_on_click) || (screen_info->params->click_to_focus)))
+;; in client:clientActivateAll()
+;; called from main:initialize()
+
+./src/client.c2661:        if (!source_is_application || screen_info->params->click_to_focus || (c->type & WINDOW_TYPE_DONT_FOCUS))
+;; in client:clientActivate()
+;; called from client:clientMoveResizeWindow()
+;; called from events:handleConfigureRequest()
+;; called from events:handleEvent()
+;; called from events:xfwm4_event_filter()
+;; attached in main:initialize()
+
+./src/workspaces.c373:    if (!(screen_info->params->click_to_focus))
+./src/workspaces.c389:            if ((screen_info->params->click_to_focus) && (screen_info->params->raise_on_click))
+
+./src/focus.c373:    if (!(screen_info->params->click_to_focus) &&
+;; in focus:clientPassFocus()
+;; called from <many>
+								  
+./src/focus.c530:            if (screen_info->params->click_to_focus)
+;; in focus:clientUpdateFocus()
+;; called from events:handleFocusIn(), events:handleFocusOut()
+;; both called from events:handleEvent()
+
+./src/events.c1402:        if (!(screen_info->params->click_to_focus) && clientAcceptFocus (c))
+;; in events:handleEnterNotify()
+;; called from events:handleEvent()
+
+
+./src/settings.c93:    if ((screen_info->params->raise_on_click) || (screen_info->params->click_to_focus))
+;; in settings:update_grabs()
+;; called (generally, when click_to_focus setting changes)
+
+;; calls client:clientGrabMouseButtonAll()
+;; calls client:clientGrabMouseButton()
+;; calls keyboard:grabButton()
+;; ... eventually calls XGrabButton or XIGrabButton1

@@ -3,14 +3,41 @@
 #define loop for (;;)
 #define var __auto_type
 
+static void getQuadrant(XWindowAttributes attr, XEvent evt) {
+	int x = evt.x - attr.x;
+	int y = evt.y - attr.y;
+	if (x < attr.width/3) x = -1;
+	else if (x > attr.width*2/3) x = 1;
+	else x = 0;
+	if (y < attr.height/3) y = -1;
+	else if (y > attr.width*2/3) y = 1;
+	else y = 0;
+	
+}
+
+static void focusNextWindow(Display* d) {
+	Window *children, focused;
+	unsigned int i, nchildren;
+	if (!(XQueryTree(d, DefaultRootWindow(d), NULL, NULL, &children, &nchildren))) return;
+	XGetInputFocus(d, &focused, NULL);
+	for (i=0; i<nchildren; i++)
+		if (children[i] == focused)
+			break;
+	i = (i+1) % nchildren;
+	XSetInputFocus(d, children[i], RevertToParent, CurrentTime);
+	XFree(children);
+}
+
 int main(void) {
 	var dpy = XOpenDisplay(0);
 	if (!dpy) return 1;
 	var root = DefaultRootWindow(dpy);
 	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("Super_L")), AnyModifier, root, True, GrabModeAsync, GrabModeAsync);
+	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("Tab")), Mod3Mask, root, True, GrabModeAsync, GrabModeAsync);
 	XKeyEvent start;
 	start.subwindow = None;
 	Bool resize = False;
+	int qx, qy;
 	loop {
 		XWindowAttributes attr;
 		XEvent ev;
