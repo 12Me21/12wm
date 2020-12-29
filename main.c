@@ -16,6 +16,10 @@
 	
 	}*/
 
+static KeyCode key (Display* d, char * name) {
+	return XKeysymToKeycode(d, XStringToKeysym(name));
+}
+
 static void focusWindow(Display* d, Window w) {
 	XSetInputFocus(d, w, RevertToPointerRoot, CurrentTime);
 	XRaiseWindow(d, w);
@@ -49,7 +53,7 @@ int main(void) {
 	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("Tab")), Mod3Mask, root, True, GrabModeAsync, GrabModeAsync);
 	XGrabKey(dpy, XKeysymToKeycode(dpy, XStringToKeysym("X")), Mod3Mask, root, True, GrabModeAsync, GrabModeAsync);
 	XSetInputFocus(dpy, root, RevertToPointerRoot, CurrentTime);
-	XSetInputFocus(dpy, None, RevertToNone, CurrentTime);
+	XSetInputFocus(dpy, root, RevertToNone, CurrentTime);
 	XGrabButton(dpy, Button1, AnyModifier, root, False, ButtonPressMask, GrabModeSync, GrabModeAsync, None, None);
 	//XSelectInput(dpy, root, ButtonPressMask);
 	
@@ -61,17 +65,24 @@ int main(void) {
 		XWindowAttributes attr;
 		XEvent ev;
 		XAllowEvents(dpy, ReplayPointer, CurrentTime);
+		//todo: peekevent + nextevent if needed
 		if (XCheckTypedEvent(dpy, ButtonPress, &ev)) {
-			if (getFocused(dpy) != ev.xbutton.subwindow) {
+			if (getFocused(dpy) != ev.xbutton.subwindow)
 				focusWindow(dpy, ev.xbutton.subwindow);
-			}
 		} else if (XCheckTypedEvent(dpy, KeyPress, &ev)) {
 			start = ev.xkey;
-			if (start.subwindow) {
-				focusWindow(dpy, start.subwindow);
-				XGetWindowAttributes(dpy, start.subwindow, &attr);
-				resize = !(ev.xbutton.x_root - attr.x < attr.width - 50 && ev.xbutton.y_root - attr.y < attr.height - 50);
-				XGrabPointer(dpy, root, True, PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
+			if (ev.xkey.keycode == key(dpy, "Super_L")) {
+				if (start.subwindow) {
+					focusWindow(dpy, start.subwindow);
+					XGetWindowAttributes(dpy, start.subwindow, &attr);
+					resize = !(ev.xbutton.x_root - attr.x < attr.width - 50 && ev.xbutton.y_root - attr.y < attr.height - 50);
+					XGrabPointer(dpy, root, True, PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
+				}
+			} else if (ev.xkey.keycode == key(dpy, "Q")) {
+				if (start.subwindow)
+					XKillClient(dpy, start.subwindow);
+			} else if (ev.xkey.keycode == key(dpy, "Z")) {
+				//focusNextWindow(dpy);
 			}
 		} else if (XCheckTypedEvent(dpy, KeyRelease, &ev)) {
 			if (start.subwindow) {
@@ -79,11 +90,11 @@ int main(void) {
 					int xdiff = ev.xbutton.x_root - start.x_root;
 					int ydiff = ev.xbutton.y_root - start.y_root;
 					XMoveResizeWindow(
-					dpy, start.subwindow,
-					attr.x,
-					attr.y,
-					attr.width + xdiff,
-					attr.height + ydiff);
+						dpy, start.subwindow,
+						attr.x,
+						attr.y,
+						attr.width + xdiff,
+						attr.height + ydiff);
 				}
 				start.subwindow = None;
 			}
@@ -94,11 +105,11 @@ int main(void) {
 				int ydiff = ev.xbutton.y_root - start.y_root;
 				if (!resize) {
 					XMoveResizeWindow(
-					                  dpy, start.subwindow,
-					                  attr.x + xdiff,
-					                  attr.y + ydiff,
-					                  attr.width,
-					                  attr.height);
+						dpy, start.subwindow,
+						attr.x + xdiff,
+						attr.y + ydiff,
+						attr.width,
+						attr.height);
 				}
 			}
 		}
