@@ -1,5 +1,9 @@
 #include <X11/Xlib.h>
 
-void luaProcessEvent(Display* d, XEvent e);
+void luaKeyPress(XKeyEvent e);
+void luaMoveDone(XKeyEvent e, XKeyEvent f, XWindowAttributes w);
+void luaMoveDuring(XKeyEvent e, XKeyEvent f, XWindowAttributes w);
+void luaMoveStart(XKeyEvent start);
+void luaClick(XButtonEvent start);
 
-void luaInit(void);
+void luaInit(Display* d);

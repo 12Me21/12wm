@@ -8,11 +8,7 @@
 #define var __auto_type
 #define when(x) break; case (x)
 
-Display* D;
-
-static KeyCode key (char * name) {
-	return XKeysymToKeycode(D, XStringToKeysym(name));
-}
+static Display* D;
 
 static void focusWindow(Window w) {
 	XSetInputFocus(D, w, RevertToPointerRoot, CurrentTime);
@@ -40,15 +36,15 @@ static Window getFocused() {
 }*/
 
 int main(void) {
-	luaInit();
-	
 	D = XOpenDisplay(NULL);
 	if (!D) return 1;
+	luaInit(D);
 	var root = DefaultRootWindow(D);
+	KeyCode win = XKeysymToKeycode(D, XK_Super_L);
 	// disable "focus follows mouse"
 	XSetInputFocus(D, root, RevertToNone, CurrentTime);
 	// listen for windows key keypresses. this also records any key which is pressed while that key is held.
-	XGrabKey(D, XKeysymToKeycode(D, XK_Super_L), AnyModifier, root, True, GrabModeAsync, GrabModeAsync);
+	XGrabKey(D, win, AnyModifier, root, True, GrabModeAsync, GrabModeAsync);
 	// listen for leftclicks
 	XGrabButton(D, Button1, AnyModifier, root, False, ButtonPressMask, GrabModeSync, GrabModeAsync, None, None);
 	
@@ -61,47 +57,25 @@ int main(void) {
 	loop {
 		XAllowEvents(D, ReplayPointer, CurrentTime);
 		XNextEvent(D, &ev);
-		luaProcessEvent(D, ev);
 		switch (ev.type) {
 		when(ButtonPress):
-			if (getFocused() != ev.xbutton.subwindow)
-				focusWindow(ev.xbutton.subwindow);
+			luaClick(ev.xbutton);
 		when(KeyPress):
 			start = ev.xkey;
-			if (ev.xkey.keycode == key("Super_L")) {
+			if (start.keycode == win) {
+				luaMoveStart(start);
 				if (start.subwindow) {
-					focusWindow(start.subwindow);
 					XGetWindowAttributes(D, start.subwindow, &attr);
-					resize = !(ev.xbutton.x_root - attr.x < attr.width - 50 && ev.xbutton.y_root - attr.y < attr.height - 50);
 					XGrabPointer(D, root, True, PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
 				}
-			} else if (ev.xkey.keycode == key("Z")) {
-				//focusNextWindow(D);
+			} else {
+				luaKeyPress(start);
 			}
 		when(KeyRelease):
-			if (start.subwindow) {
-				if (resize) {
-					int xdiff = ev.xbutton.x_root - start.x_root;
-					int ydiff = ev.xbutton.y_root - start.y_root;
-					XMoveResizeWindow(
-						D, start.subwindow,
-						attr.x, attr.y,
-						attr.width + xdiff, attr.height + ydiff);
-				}
-				start.subwindow = None;
-			}
+			luaMoveDone(start, ev.xkey, attr);
 			XUngrabPointer(D, CurrentTime);
 		when(MotionNotify):
-			if (start.subwindow) {
-				int xdiff = ev.xbutton.x_root - start.x_root;
-				int ydiff = ev.xbutton.y_root - start.y_root;
-				if (!resize) {
-					XMoveResizeWindow(
-						D, start.subwindow,
-						attr.x + xdiff, attr.y + ydiff,
-						attr.width, attr.height);
-				}
-			}
+			luaMoveDuring(start, ev.xkey, attr);
 		}
 	}
 }
