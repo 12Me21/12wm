@@ -26,13 +26,6 @@ static Window getFocused() {
 	return w;
 }
 
-void processKey(KeyCode code) {
-	char* name = XKeysymToString(XKeycodeToKeysym(D, code, 0));
-	//	lua_pushvalue(L, -1);
-	//lua_pushstring(L, name);
-	//int status = lua_pcall(L, 1, 0, 0);
-}
-
 /*static void focusNextWindow(Display* d) {
 	Window *children, focused;
 	unsigned int i, nchildren;
@@ -68,13 +61,13 @@ int main(void) {
 	loop {
 		XAllowEvents(D, ReplayPointer, CurrentTime);
 		XNextEvent(D, &ev);
+		luaProcessEvent(D, ev);
 		switch (ev.type) {
 		when(ButtonPress):
 			if (getFocused() != ev.xbutton.subwindow)
 				focusWindow(ev.xbutton.subwindow);
 		when(KeyPress):
 			start = ev.xkey;
-			processKey(ev.xkey.keycode);
 			if (ev.xkey.keycode == key("Super_L")) {
 				if (start.subwindow) {
 					focusWindow(start.subwindow);
@@ -82,9 +75,6 @@ int main(void) {
 					resize = !(ev.xbutton.x_root - attr.x < attr.width - 50 && ev.xbutton.y_root - attr.y < attr.height - 50);
 					XGrabPointer(D, root, True, PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
 				}
-			} else if (ev.xkey.keycode == key("Q")) {
-				if (start.subwindow)
-					XKillClient(D, start.subwindow);
 			} else if (ev.xkey.keycode == key("Z")) {
 				//focusNextWindow(D);
 			}

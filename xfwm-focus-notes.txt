@@ -12,8 +12,10 @@ Error: target STRING not available
 ./defaults/defaults8:click_to_focus=true
 
 ./src/client.c2187:            if ((c) && ((screen_info->params->raise_on_click) || (screen_info->params->click_to_focus)))
-;; in client:clientActivateAll()
+;; in client:clientFrameAll()
 ;; called from main:initialize()
+; if CTF set, call clientGrabMouseButton
+; this grabs button 1
 
 ./src/client.c2661:        if (!source_is_application || screen_info->params->click_to_focus || (c->type & WINDOW_TYPE_DONT_FOCUS))
 ;; in client:clientActivate()
@@ -23,12 +25,25 @@ Error: target STRING not available
 ;; called from events:xfwm4_event_filter()
 ;; attached in main:initialize()
 
+;; also called from netwm:clientHandleNetActiveWindow()
+;; called from events:handleClientMessage()
+;; called from events:handleEvent()
+
+;; moveresize also called from netwm:clientNetMoveResizeWindow()
+;; called from events:handleClientMessage() ...
+
+; if certain conditions are met, call clientSetFocus, passing NO_FOCUS_FLAG.
+
 ./src/workspaces.c373:    if (!(screen_info->params->click_to_focus))
 ./src/workspaces.c389:            if ((screen_info->params->click_to_focus) && (screen_info->params->raise_on_click))
+;; both in workspaces:workspaceSwitch()
+;; this is probably only called whenst switching workspaces so whatever
 
 ./src/focus.c373:    if (!(screen_info->params->click_to_focus) &&
 ;; in focus:clientPassFocus()
 ;; called from <many>
+; if CTF is enabled, this finds the highest/most preferred window
+; and focuses it (otherwise focuses window at mouse pos)
 								  
 ./src/focus.c530:            if (screen_info->params->click_to_focus)
 ;; in focus:clientUpdateFocus()
@@ -38,7 +53,7 @@ Error: target STRING not available
 ./src/events.c1402:        if (!(screen_info->params->click_to_focus) && clientAcceptFocus (c))
 ;; in events:handleEnterNotify()
 ;; called from events:handleEvent()
-
+; if CTF is disabled, it does /something/...
 
 ./src/settings.c93:    if ((screen_info->params->raise_on_click) || (screen_info->params->click_to_focus))
 ;; in settings:update_grabs()
@@ -48,3 +63,24 @@ Error: target STRING not available
 ;; calls client:clientGrabMouseButton()
 ;; calls keyboard:grabButton()
 ;; ... eventually calls XGrabButton or XIGrabButton1
+
+
+Init process:
+- check savedata
+- init menu event window (?)
+- clear focus variables
+- get display info etc.
+- set up modifiers
+- set up signal handler
+- get number of screens
+- set up gdk screen whatever
+- make gtk window stuff
+- !set up settings handler + load settings
+- init compositor
+- init startup notification?
+- !XSetInputFocus
+- clientFrameAll
+- add screen size change events
+- define cursor type
+- !init event filter
+- gtk events
