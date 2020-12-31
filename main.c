@@ -61,19 +61,23 @@ int main(void) {
 		when(ButtonPress):
 			luaClick(ev.xbutton);
 		when(KeyPress):
-			start = ev.xkey;
-			if (start.keycode == win) {
+			if (ev.xkey.keycode == win) {
+				start = ev.xkey;
 				luaMoveStart(start);
 				if (start.subwindow) {
 					XGetWindowAttributes(D, start.subwindow, &attr);
 					XGrabPointer(D, root, True, PointerMotionMask, GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
 				}
 			} else {
-				luaKeyPress(start);
+				luaKeyPress(ev.xkey);
 			}
 		when(KeyRelease):
-			luaMoveDone(start, ev.xkey, attr);
-			XUngrabPointer(D, CurrentTime);
+			if (ev.xkey.keycode == win) {
+				luaMoveDone(start, ev.xkey, attr);
+				XUngrabPointer(D, CurrentTime);
+			} else {
+				//luaKeyPress(ev.xkey);
+			}
 		when(MotionNotify):
 			luaMoveDuring(start, ev.xkey, attr);
 		}
