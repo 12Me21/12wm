@@ -3,7 +3,7 @@
 #include <lua5.3/lualib.h>
 #include <lua5.3/lauxlib.h>
 
-#include "lua_classes.h" //not great to include this since it increases recompilations
+#include "classes.h" //not great to include this since it increases recompilations
 
 int strcmp(const char *s1, const char *s2);
 

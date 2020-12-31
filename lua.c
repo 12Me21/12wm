@@ -2,7 +2,7 @@
 #include <X11/XKBlib.h>
 #include <string.h>
 
-#include "lua_classes.h"
+#include "lua/classes.h"
 
 Display* D;
 lua_State* L;

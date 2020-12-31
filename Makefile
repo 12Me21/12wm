@@ -1,16 +1,28 @@
-CFLAGS?= -pedantic -Wall -Os -Wno-builtin-declaration-mismatch
-libs= X11 lua5.3
+CFLAGS?= -pedantic -Wall -Wno-builtin-declaration-mismatch
+# libs to include when linking (with -l<name> flags)
+libs:= X11 lua5.3
+# c source code files
+srcs:= main lua lua/point lua/window
+# location for intermediate files (.o and .d)
+junkdir:= .junk
+#note: I haven't found a good way to create the subdirs in junkdir so PLEAWSE just dont delete them
 
-12wm: main.o lua.o lua_point.o lua_window.o
+CC=@echo $@'	from: '$^ ; cc
+
+12wm: $(srcs:%=$(junkdir)/%.o)
 	$(CC) $(CFLAGS) $(libs:%=-l%) $^ -o $@
 
-main.o: lua.h
+$(junkdir)/%.d: %.c 
+	$(CC) $(CFLAGS) -MF$@ -MG -MM -MP -MT$@ -MT$(<:%.c=$(junkdir)/%.o) $<
 
-lua.o: lua_classes.h
+$(junkdir)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-lua_point.o: luahelp.h lua_classes.h
-
-lua_window.o: luahelp.h lua_classes.h
+#PROBLEM: this includes files even if `clean` is being run, causing it to generate dependency files xd
+include $(srcs:%=$(junkdir)/%.d)
 
 clean:
-	$(RM) 12wm *.o
+	find $(junkdir) -type f -delete
+	$(RM) 12wm
+
+.PHONY: clean

@@ -1,4 +1,4 @@
-#include "luahelp.h"
+#include "macros.h"
 
 LUA_CLASSNAME(window);
 
