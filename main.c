@@ -5,22 +5,17 @@
 #include "lua.h"
 
 #define loop for (;;)
-#define var __auto_type
+//#define var __auto_type
 #define when(x) break; case (x)
 
 static Display* D;
 
-static void focusWindow(Window w) {
-	XSetInputFocus(D, w, RevertToPointerRoot, CurrentTime);
-	XRaiseWindow(D, w);
-}
-
-static Window getFocused() {
+/*static Window getFocused() {
 	Window w;
 	int x;
 	XGetInputFocus(D, &w, &x);
 	return w;
-}
+	}*/
 
 /*static void focusNextWindow(Display* d) {
 	Window *children, focused;
@@ -39,10 +34,10 @@ int main(void) {
 	D = XOpenDisplay(NULL);
 	if (!D) return 1;
 	luaInit(D);
-	var root = DefaultRootWindow(D);
+	Window root = DefaultRootWindow(D);
 	KeyCode win = XKeysymToKeycode(D, XK_Super_L);
 	// disable "focus follows mouse"
-	XSetInputFocus(D, root, RevertToNone, CurrentTime);
+	XSetInputFocus(D, root, RevertToPointerRoot, CurrentTime);
 	// listen for windows key keypresses. this also records any key which is pressed while that key is held.
 	XGrabKey(D, win, AnyModifier, root, True, GrabModeAsync, GrabModeAsync);
 	// listen for leftclicks
@@ -51,7 +46,6 @@ int main(void) {
 	XKeyEvent start = {
 		.subwindow = None
 	};
-	Bool resize = False;
 	XWindowAttributes attr;
 	XEvent ev;
 	loop {

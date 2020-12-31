@@ -84,7 +84,6 @@ LUA_FUNC(tostring) {
 	return 1;
 }
 
-
 void Lc_window_init(void) {
 	LUACLASS
 		LUAOP(index),
